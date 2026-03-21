@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: "-js -m 8222"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: messages
+    ports:
+      - "5432:5432"
+
+  service-api:
+    build:
+      context: ./service-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - nats
+      - postgres
+
+  service-worker:
+    build:
+      context: ./service-worker
+    depends_on:
+      - nats
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - service-api

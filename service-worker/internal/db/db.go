@@ -1,0 +1,42 @@
+package db
+
+import (
+	"database/sql"
+	"log/slog"
+	"os"
+	"time"
+
+	_ "github.com/lib/pq"
+)
+
+func ConnectAndInit() *sql.DB {
+	var db *sql.DB
+	var err error
+	for i := 0; i < 5; i++ {
+		db, err = sql.Open("postgres", "postgres://postgres:postgres@postgres:5432/messages?sslmode=disable")
+		if err == nil {
+			err = db.Ping()
+			if err == nil {
+				break
+			}
+		}
+		time.Sleep(2 * time.Second)
+	}
+	if err != nil {
+		slog.Error("failed to connect to db", "error", err)
+		os.Exit(1)
+	}
+
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS messages (
+		id SERIAL PRIMARY KEY,
+		text TEXT NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	)`)
+	if err != nil {
+		slog.Error("failed to create table", "error", err)
+		os.Exit(1)
+	}
+
+	slog.Info("db initialized successfully")
+	return db
+}
