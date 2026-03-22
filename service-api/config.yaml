@@ -1,0 +1,2 @@
+db_address: "postgres:5432"
+nats_address: "nats:4222"

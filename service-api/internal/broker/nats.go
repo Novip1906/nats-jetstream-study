@@ -8,11 +8,11 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func Connect() (*nats.Conn, nats.JetStreamContext) {
+func Connect(natsURL string) (*nats.Conn, nats.JetStreamContext) {
 	var nc *nats.Conn
 	var err error
 	for i := 0; i < 5; i++ {
-		nc, err = nats.Connect("nats:4222")
+		nc, err = nats.Connect(natsURL)
 		if err == nil {
 			break
 		}

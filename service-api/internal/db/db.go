@@ -9,11 +9,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func Connect() *sql.DB {
+func Connect(dbURL string) *sql.DB {
 	var db *sql.DB
 	var err error
 	for i := 0; i < 5; i++ {
-		db, err = sql.Open("postgres", "postgres://postgres:postgres@postgres:5432/messages?sslmode=disable")
+		db, err = sql.Open("postgres", dbURL)
 		if err == nil {
 			err = db.Ping()
 			if err == nil {

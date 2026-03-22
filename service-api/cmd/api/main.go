@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"service-api/internal/broker"
+	"service-api/internal/config"
 	"service-api/internal/db"
 	"service-api/internal/handlers"
 
@@ -15,10 +17,17 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	database := db.Connect()
+	cfg, err := config.LoadConfig("config.yaml")
+	if err != nil {
+		slog.Error("failed to load config", "error", err)
+		os.Exit(1)
+	}
+
+	dbURL := fmt.Sprintf("postgres://postgres:postgres@%s/messages?sslmode=disable", cfg.DBAddress)
+	database := db.Connect(dbURL)
 	defer database.Close()
 
-	nc, js := broker.Connect()
+	nc, js := broker.Connect(cfg.NATSAddress)
 	defer nc.Close()
 
 	h := &handlers.Handler{

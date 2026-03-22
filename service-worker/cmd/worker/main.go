@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"sync"
 	"time"
 
 	"service-worker/internal/broker"
+	"service-worker/internal/config"
 	"service-worker/internal/db"
 	"service-worker/internal/worker"
 )
@@ -17,10 +19,17 @@ func main() {
 
 	time.Sleep(5 * time.Second)
 
-	database := db.ConnectAndInit()
+	cfg, err := config.LoadConfig("config.yaml")
+	if err != nil {
+		slog.Error("failed to load config", "error", err)
+		os.Exit(1)
+	}
+
+	dbURL := fmt.Sprintf("postgres://postgres:postgres@%s/messages?sslmode=disable", cfg.DBAddress)
+	database := db.ConnectAndInit(dbURL)
 	defer database.Close()
 
-	nc, js := broker.ConnectAndInit()
+	nc, js := broker.ConnectAndInit(cfg.NATSAddress)
 	defer nc.Close()
 
 	w := &worker.Worker{
