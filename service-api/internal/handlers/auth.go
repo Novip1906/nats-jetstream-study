@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"log/slog"
 	"net/http"
 	"service-api/internal/models"
@@ -29,7 +28,7 @@ func (h *Handler) Register(c *gin.Context) {
 		return
 	}
 
-	_, err = h.DB.Exec("INSERT INTO users (username, password_hash) VALUES ($1, $2)", req.Username, string(hash))
+	err = h.DB.CreateUser(req.Username, string(hash))
 	if err != nil {
 		slog.Error("failed to create user", "error", err)
 		c.JSON(http.StatusConflict, gin.H{"error": "username already exists"})
@@ -46,15 +45,10 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-	err := h.DB.QueryRow("SELECT id, username, password_hash FROM users WHERE username = $1", req.Username).Scan(&user.ID, &user.Username, &user.PasswordHash)
+	user, err := h.DB.GetUserByUsername(req.Username)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
-			return
-		}
 		slog.Error("failed to query user", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 

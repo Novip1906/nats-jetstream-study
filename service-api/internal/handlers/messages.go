@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"database/sql"
 	"log/slog"
 	"net/http"
+	"service-api/internal/db"
 	"service-api/internal/models"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +11,7 @@ import (
 )
 
 type Handler struct {
-	DB *sql.DB
+	DB *db.DB
 	JS nats.JetStreamContext
 }
 
@@ -40,26 +40,11 @@ func (h *Handler) PublishMessage(c *gin.Context) {
 }
 
 func (h *Handler) GetMessages(c *gin.Context) {
-	rows, err := h.DB.Query("SELECT id, text, created_at FROM messages ORDER BY created_at DESC")
+	messages, err := h.DB.GetMessages()
 	if err != nil {
 		slog.Error("failed to query messages", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-	defer rows.Close()
-
-	var messages []models.Message
-	for rows.Next() {
-		var msg models.Message
-		if err := rows.Scan(&msg.ID, &msg.Text, &msg.CreatedAt); err != nil {
-			slog.Error("failed to scan row", "error", err)
-			continue
-		}
-		messages = append(messages, msg)
-	}
-
-	if messages == nil {
-		messages = []models.Message{}
 	}
 
 	c.JSON(http.StatusOK, messages)
@@ -67,7 +52,7 @@ func (h *Handler) GetMessages(c *gin.Context) {
 
 func (h *Handler) DeleteMessage(c *gin.Context) {
 	id := c.Param("id")
-	_, err := h.DB.Exec("DELETE FROM messages WHERE id = $1", id)
+	err := h.DB.DeleteMessage(id)
 	if err != nil {
 		slog.Error("failed to delete message", "id", id, "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

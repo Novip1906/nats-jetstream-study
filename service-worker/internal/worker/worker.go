@@ -1,15 +1,15 @@
 package worker
 
 import (
-	"database/sql"
 	"log/slog"
+	"service-worker/internal/db"
 	"time"
 
 	"github.com/nats-io/nats.go"
 )
 
 type Worker struct {
-	DB *sql.DB
+	DB *db.DB
 	JS nats.JetStreamContext
 }
 
@@ -36,7 +36,7 @@ func (w *Worker) Start(subject string, delay time.Duration, durableName string) 
 		
 		time.Sleep(delay)
 
-		_, err = w.DB.Exec("INSERT INTO messages (text) VALUES ($1)", text)
+		err = w.DB.SaveMessage(text)
 		if err != nil {
 			slog.Error("failed to insert msg", "text", text, "error", err)
 			continue

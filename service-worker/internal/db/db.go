@@ -9,7 +9,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func ConnectAndInit(dbURL string) *sql.DB {
+type DB struct {
+	*sql.DB
+}
+
+func ConnectAndInit(dbURL string) *DB {
 	var db *sql.DB
 	var err error
 	for i := 0; i < 5; i++ {
@@ -38,5 +42,10 @@ func ConnectAndInit(dbURL string) *sql.DB {
 	}
 
 	slog.Info("db initialized successfully")
-	return db
+	return &DB{DB: db}
+}
+
+func (db *DB) SaveMessage(text string) error {
+	_, err := db.Exec("INSERT INTO messages (text) VALUES ($1)", text)
+	return err
 }
